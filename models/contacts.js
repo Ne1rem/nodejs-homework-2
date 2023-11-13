@@ -1,3 +1,4 @@
+const HttpError = require("../HttpErrors/httpErrors");
 const { Contact }  = require("./contactsSchema");
 
 async function listContacts(req, res, next) {
@@ -14,12 +15,15 @@ async function getContactById (req, res, next) {
   try {
     const contact = await Contact.findById(contactId).exec();
 
-    if (contact === null ) {
-      return res.status(404).send("Contact not found:(");
+    if (!contact) {
+      throw HttpError(404, "Contact not found");
     }
 
     res.send(contact);
   } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(404).json({ message: "Contact not found" });
+    }
     next(error)
   }
 }
@@ -35,6 +39,9 @@ async function removeContact (req, res, next) {
 
     res.send("Contact delete");
   } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(404).json({ message: "Contact not found" });
+    }
     next(error)
   }
 }
@@ -75,6 +82,9 @@ async function updateContact(req, res, next) {
 
     res.send(result);
   } catch (err) {
+    if (err.name === 'CastError') {
+      return res.status(404).json({ message: "Contact not found" });
+    }
     next(err);
   }
 }
@@ -95,6 +105,9 @@ async function updateFavorite(req, res, next) {
 
     res.json(result);
   } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(404).json({ message: "Contact not found" });
+    }
     next(error);
   }
 }
