@@ -1,9 +1,11 @@
 const messages = {
-    400: "Bad request",
-    401: "Unathorized",
-    403: "Forbidden",
-    404: "Not found",
-    409: "Conflict",
+  400: "Bad request",
+  401: "Unauthorized",
+  403: "Forbidden",
+  404: "Not found",
+  409: "Conflict",
+  410: "Gone",
+  500: "Server error",
   };
   const HttpError = (status, message = messages[status]) => {
     const error = new Error(message);

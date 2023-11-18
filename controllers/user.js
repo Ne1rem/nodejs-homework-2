@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
+const HttpError = require("../HttpErrors/httpErrors");
 
 const secret = process.env.SECRET_KEY;
 
@@ -8,27 +9,26 @@ async function register(req, res, next) {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email }).exec();
+    const user = await User.findOne({ email });
 
-    if (user !== null) {
-      return res.status(409).send({ message: "Email in use" });
-    }
+  if (user) {
+    throw HttpError(409, "Email in use");
+  }
+  const hashPassword = await bcrypt.hash(password, 10);
 
-    const passwordHash = await bcrypt.hash(password, 10);
+  const newUser = await User.create({ ...req.body, password: hashPassword });
 
-    const newUser = await User.create({ ...req.body, password: passwordHash });
+  const id = newUser._id;
+  const token = jwt.sign({ id }, secret, { expiresIn: "23h" });
+  await User.findByIdAndUpdate(id, { token });
 
-    const id = newUser._id;
-    const token = jwt.sign({ id }, secret, { expiresIn: 60 * 60 });
-    await User.findByIdAndUpdate(id, { token });
-
-    res.status(201).json({
-      token,
-      user: {
-        email: newUser.email,
-        subscription: newUser.subscription,
-      },
-    });
+  res.status(201).json({
+    token,
+    user: {
+      email: newUser.email,
+      subscription: newUser.subscription,
+    },
+  });
   } catch (error) {
     next(error);
   }
@@ -38,31 +38,28 @@ async function login(req, res, next) {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email }).exec();
+   const user = await User.findOne({ email });
 
-    if (user === null) {
-      return res.status(401).send({ message: "Email or password is wrong" });
-    }
-    const isMatch = await bcrypt.compare(password, user.password);
+  if (!user) {
+    throw HttpError(401, "Email or password is wrong");
+  }
 
-    if (isMatch === false) {
-      return res
-        .status(401)
-        .send({ message: "Email or password is incorrect" });
-    }
+  const compareResult = await bcrypt.compare(password, user.password);
 
-    const id = user._id;
-    const token = jwt.sign({ id }, secret, { expiresIn: 60 * 60 });
+  if (!compareResult) {
+    throw HttpError(401, "Email or password is wrong");
+  }
 
-    await User.findByIdAndUpdate(id, { token });
-
-    res.status(201).json({
-      token,
-      user: {
-        email: user.email,
-        subscription: user.subscription,
-      },
-    });
+  const id = user._id;
+  const token = jwt.sign({ id }, secret, { expiresIn: "23h" });
+  await User.findByIdAndUpdate(id, { token });
+  res.status(201).json({
+    token,
+    user: {
+      email: user.email,
+      subscription: user.subscription,
+    },
+  });
   } catch (error) {
     next(error);
   }
@@ -70,11 +67,10 @@ async function login(req, res, next) {
 
 async function logout(req, res, next) {
   try {
-    await User.findByIdAndUpdate(req.user.id, {
-      token: null,
-    }).exec();
+    const { _id } = req.user;
 
-    res.status(204).end();
+  await User.findByIdAndUpdate(_id, { token: "" });
+  res.status(204).end();
   } catch (error) {
     next(error);
   }
