@@ -1,5 +1,5 @@
 const HttpError = require("../HttpErrors/httpErrors");
-const { Contact }  = require("./contactsSchema");
+const { Contact }  = require("../models/contactsSchema");
 
 async function listContacts(req, res, next) {
   try {
