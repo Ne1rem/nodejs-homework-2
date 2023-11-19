@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const User = require("../models/user");
+const {User} = require("../models/user")
 const bcrypt = require("bcrypt");
 const HttpError = require("../HttpErrors/httpErrors");
 
@@ -67,7 +67,7 @@ async function login(req, res, next) {
 
 async function logout(req, res, next) {
   try {
-    const { _id } = req.user;
+  const { _id } = req.user;
 
   await User.findByIdAndUpdate(_id, { token: "" });
   res.status(204).end();
