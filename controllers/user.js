@@ -101,6 +101,17 @@ async function updateAvatar(req,res,next) {
 
     const avatarDir = path.join(__dirname, "../public/avatars");
   
+    if (!req.file) {
+      const defaultImage = path.join(__dirname, "../public/avatars/znak_voprosa.png");
+      const filename = `znak_voprosa.png`;
+      await fs.copyFile(defaultImage, path.join(avatarDir, filename));
+      const avatarURL = path.join("avatars", filename);
+      await User.findByIdAndUpdate(_id, { avatarURL });
+      return res.json({
+        avatarURL,
+      });
+    }
+  
     const { path: tempUpload, originalname } = req.file;
     const filename = `${_id}_${originalname}`;
   
