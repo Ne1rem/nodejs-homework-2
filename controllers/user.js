@@ -7,6 +7,8 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const Jimp = require("jimp");
 const secret = process.env.SECRET_KEY;
+const sendEmail = require("../helper/sendEmail")
+const crypto = require("node:crypto");
 
 async function register(req, res, next) {
   const { email, password } = req.body;
@@ -22,6 +24,14 @@ async function register(req, res, next) {
   const avatarURL = gravatar.url(email);
 
   const newUser = await User.create({ ...req.body, password: hashPassword, avatarURL });
+
+  const verifyToken = crypto.randomUUID();
+  await sendEmail({
+    to: email,
+    subject: "Welcome to my BookShelf",
+    html: `To confirm your registration please click on the <a href="http://localhost:8080/api/auth/verify/${verifyToken}">link</a>`,
+      text: `To confirm your registration please open the link http://localhost:8080/api/auth/verify/${verifyToken}`,
+  });
 
   const id = newUser._id;
   const token = jwt.sign({ id }, secret, { expiresIn: "23h" });
