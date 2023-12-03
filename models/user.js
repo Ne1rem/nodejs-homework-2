@@ -41,11 +41,18 @@ const schema = Joi.object({
   const updateSchema = Joi.object({
     subscription: Joi.string().allow("starter", "pro", "business"),
   });
-  
+
+  const verifyShema = Joi.object({
+    email: Joi.string().required(),
+  });
+
   const schemas = {
     schema,
     updateSchema,
+    verifyShema
   };
+
+  
   const User = mongoose.model("user", userSchema);
   
   module.exports = {

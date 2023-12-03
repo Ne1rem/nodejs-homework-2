@@ -23,27 +23,19 @@ async function register(req, res, next) {
 
   const avatarURL = gravatar.url(email);
 
-  const newUser = await User.create({ ...req.body, password: hashPassword, avatarURL });
-
-  const verifyToken = crypto.randomUUID();
+  const verificationToken = crypto.randomUUID();
   await sendEmail({
     to: email,
     subject: "Welcome to my BookShelf",
-    html: `To confirm your registration please click on the <a href="http://localhost:8080/api/auth/verify/${verifyToken}">link</a>`,
-      text: `To confirm your registration please open the link http://localhost:8080/api/auth/verify/${verifyToken}`,
+    html: `To confirm your registration please click on the <a href="http://localhost:3000/api/users/verify/${verificationToken}">link</a>`,
+      text: `To confirm your registration please open the link http://localhost:3000/api/users/verify/${verificationToken}`,
   });
 
-  const id = newUser._id;
-  const token = jwt.sign({ id }, secret, { expiresIn: "23h" });
-  await User.findByIdAndUpdate(id, { token });
+  await User.create({ ...req.body, verificationToken,  password: hashPassword, avatarURL });
 
-  res.status(201).json({
-    token,
-    user: {
-      email: newUser.email,
-      subscription: newUser.subscription,
-    },
-  });
+
+  res.status(201).send({ message: "Registration successfully" , verificationToken});
+  
   } catch (error) {
     next(error);
   }
@@ -63,6 +55,10 @@ async function login(req, res, next) {
 
   if (!compareResult) {
     throw HttpError(401, "Email or password is wrong");
+  }
+
+  if (user.verify !== true) {
+    return res.status(401).send({ message: "Your account is not verified" });
   }
 
   const id = user._id;
@@ -144,4 +140,22 @@ async function updateAvatar(req,res,next) {
  
 }
 
-module.exports = { register, login, logout, current, updateAvatar };
+async function verify(req, res, next) {
+  const { verificationToken } = req.params;
+
+  try {
+    const user = await User.findOne({ verificationToken: verificationToken }).exec();
+
+    if (user === null) {
+      return res.status(404).send({ message: "User not found" });
+    }
+
+    await User.findByIdAndUpdate(user._id, { verify: true, verificationToken: null });
+
+    res.send({ message: "Verification successful" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { register, login, logout, current, updateAvatar, verify };
