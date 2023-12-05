@@ -12,4 +12,5 @@ router.post("/logout", authenticate, UsersController.logout);
 router.get("/current", authenticate, UsersController.current);
 router.patch("/avatars", authenticate, upload.single("avatar"), UsersController.updateAvatar)
 router.get("/verify/:verificationToken", UsersController.verify)
+router.post("/verify", validateBody(schemas.verifyShema), UsersController.sendVerify)
 module.exports = router;
